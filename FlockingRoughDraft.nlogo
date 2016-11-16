@@ -8,6 +8,7 @@ globals[
 
 turtles-own[
   flockmates   ;;agent set of fellow flockmates
+  bounced?
 ]
 
 to draw_walls ;;will make white border on walls
@@ -51,8 +52,19 @@ to go ;;all turtles move one step...tick clock
 end
 
 to move ;;first adjust heading depending on if at wall, then make movement decision
-  bounce
-  fd bot_speed + random (0.05 * bot_speed) ;;introduce speed error
+  ;;step 1
+  bounce ;;ie "active sensing" for obstacle in front
+  if bounced? = true
+  [fd bot_speed + random (0.05 * bot_speed) set bounced? false stop] ;;introduce speed error
+  ;;end step 1
+
+  ;;step 2
+
+
+
+end
+
+to separate
 
 end
 
@@ -60,11 +72,11 @@ to bounce
   ; check: hitting left or right wall?
   if [pcolor] of patch-ahead bot_speed = white
     ; if so, reflect heading around x axis
-    [ set heading (- heading) ]
+    [ set heading (- heading) set bounced? true ]
   ; check: hitting top or bottom wall?
   if [pcolor] of patch-ahead bot_speed = white
     ; if so, reflect heading around y axis
-    [ set heading (180 - heading) ]
+    [ set heading (180 - heading) set bounced? true ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -137,7 +149,7 @@ numbots
 numbots
 1
 100
-20
+23
 1
 1
 NIL
