@@ -1,12 +1,13 @@
-
+globals[
+  my_size ;; size of bot
+  ir_z1 ;; zone 1 threshold
+  ir_z2 ;; zone 2 threshold
+  ir_z3 ;; zone 3 threshold
+  ir_z4 ;; zone 4 threshold
+]
 
 turtles-own[
   flockmates   ;;agent set of fellow flockmates
-  my_size ;; size of bot
-  ir_z1 ;; zone 1 range
-  ir_z2 ;; zone 2 range
-  ir_z3 ;; zone 3 range
-  ir_z4 ;; zone 4 range
 ]
 
 to draw_walls ;;will make white border on walls
@@ -18,31 +19,38 @@ end
 
 to setup
   clear-all
-  draw_walls
+  draw_walls ;;walls are white
+  set my_size bot_speed / 3 ;;size is based off of speed
+  ;;set all ir thresholds
+  set ir_z1 my_size
+  set ir_z2 my_size
+  set ir_z3 my_size * 2
+  set ir_z4 my_size * 3.5
+  ;;create all bots
   create-turtles numBots
   [
     set color sky ;;random shading of sky blue
-    set my_size bot_speed / 3
     set size my_size
     place_randomly
     set flockmates no-turtles ;;flockmates set for each turtle starts as empty set
   ]
+  ;;reset clock
   reset-ticks
 end
 
-to place_randomly
+to place_randomly ;;randomly places a bot...avoids starting too close to wall
   setxy random-xcor random-ycor
   if pcolor = white [place_randomly]
   if abs [pxcor] of patch-ahead bot_speed = max-pxcor [place_randomly]
   if abs [pycor] of patch-ahead bot_speed = max-pycor [place_randomly]
 end
 
-to go
+to go ;;all turtles move one step...tick clock
   ask turtles [move]
   tick
 end
 
-to move
+to move ;;first adjust heading depending on if at wall, then make movement decision
   bounce
   fd bot_speed + random (0.05 * bot_speed) ;;introduce speed error
 
