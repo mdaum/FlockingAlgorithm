@@ -2,7 +2,7 @@
 
 turtles-own[
   flockmates   ;;agent set of fellow flockmates
-  my_size ;; size
+  my_size ;; size of bot
   ir_z1 ;; zone 1 range
   ir_z2 ;; zone 2 range
   ir_z3 ;; zone 3 range
