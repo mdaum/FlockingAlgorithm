@@ -18,16 +18,9 @@ turtles-own[
   b_val
 ]
 
-to draw_walls ;;will make white border on walls
-  ask patches with [abs pxcor > max-pxcor - 2] [set pcolor white]
-    ask patches with [abs pycor > max-pycor - 2][ set pcolor white ]
-    ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
-
-end
 
 to setup
   clear-all
-  draw_walls ;;walls are white
   set my_size bot_speed / 3 ;;size is based off of speed
   ;;set all ir thresholds
   set ir_z1 my_size
@@ -65,11 +58,6 @@ to go ;;all turtles move one step...tick clock
 end
 
 to move ;;first adjust heading depending on if at wall, then make movement decision
-  ;;step 1
-  bounce ;;ie "active sensing" for obstacle in front
-  if bounced? = true
-  [fd bot_speed set bounced? false stop]
-  ;;end step 1
 
   ;;step 2
   separate ;; poll passive IR for Front, Right, Left adjust heading as needed
@@ -89,21 +77,16 @@ to separate
 
 end
 
-to bounce ;;currently imperfect
-  if [pcolor] of patch-ahead bot_speed = white or [pcolor] of patch-ahead bot_speed - 1 = white or [pcolor] of patch-ahead bot_speed - 2 = white
-    [ set heading (180 + heading + random 45) set bounced? true]
-end
-
 to find-flockmates  ;; turtle procedure
   set flockmates other turtles in-radius sensor_range
   compute-r_val
 end
 
 to compute-r_val ;;in a pickle....i would imagine I should only react to people on my right side....pointing their heading towards me....
-  let myTurtle turtle who let willTurn 0  let myX xcor let curr 0 let numMatter 0 let diffheading subtract-headings 0 heading ;;compute average distance of ppl triggering sensor
-  ask flockmates[
-    ]
-  ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
+  let myTurtle turtle who let willTurn 0 let myHeading heading
+  ;;ask flockmates
+ ;; [if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
+  ;;if[numMatter > 0]
 
 end
 
@@ -116,13 +99,13 @@ to compute-f_val
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-215
-15
-1248
-494
-44
-19
-11.5
+255
+13
+694
+473
+16
+16
+13.0
 1
 10
 1
@@ -132,23 +115,23 @@ GRAPHICS-WINDOW
 1
 1
 1
--44
-44
--19
-19
+-16
+16
+-16
+16
 0
 0
 1
 ticks
-60.0
+30.0
 
 BUTTON
-47
-34
-110
-67
+25
+35
+88
+68
 NIL
-setup\n
+setup
 NIL
 1
 T
@@ -160,13 +143,13 @@ NIL
 1
 
 BUTTON
-131
-34
-194
-67
+127
+35
+190
+68
 NIL
 go
-T
+NIL
 1
 T
 OBSERVER
@@ -177,12 +160,12 @@ NIL
 1
 
 SLIDER
-25
-111
-197
-144
-numbots
-numbots
+40
+126
+212
+159
+numBots
+numBots
 1
 100
 2
@@ -192,15 +175,15 @@ NIL
 HORIZONTAL
 
 SLIDER
-22
-165
-194
-198
+31
+213
+203
+246
 bot_speed
 bot_speed
-0.9
-3
 1.5
+3
+3
 0.3
 1
 NIL
