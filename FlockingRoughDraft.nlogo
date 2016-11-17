@@ -4,17 +4,24 @@ globals[
   ir_z2 ;; zone 2 threshold
   ir_z3 ;; zone 3 threshold
   ir_z4 ;; zone 4 threshold
+  sensor_range ;;max range of ir sensors
 ]
 
 turtles-own[
   flockmates   ;;agent set of fellow flockmates
   bounced?
+  separated?
+  cohesioned?
+  r_val
+  l_val
+  f_val
+  b_val
 ]
 
 to draw_walls ;;will make white border on walls
-  ask patches with [abs pxcor = max-pxcor] [set pcolor white]
-    ask patches with [abs pycor = max-pycor][ set pcolor white ]
-   ;; ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
+  ask patches with [abs pxcor > max-pxcor - 2] [set pcolor white]
+    ask patches with [abs pycor > max-pycor - 2][ set pcolor white ]
+    ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
 
 end
 
@@ -27,15 +34,21 @@ to setup
   set ir_z2 my_size
   set ir_z3 my_size * 2
   set ir_z4 my_size * 3.5
+  set sensor_range my_size * 5
   ;;create all bots
   create-turtles numBots
   [
     set color sky ;;random shading of sky blue
     set size my_size
+    ;;set shape "circle"
     place_randomly
     set flockmates no-turtles ;;flockmates set for each turtle starts as empty set
+    set bounced? false
+    set separated? false
+    set cohesioned? false
+    set label who
+    ;;show xcor show ycor show heading
   ]
-  ;;reset clock
   reset-ticks
 end
 
@@ -55,28 +68,51 @@ to move ;;first adjust heading depending on if at wall, then make movement decis
   ;;step 1
   bounce ;;ie "active sensing" for obstacle in front
   if bounced? = true
-  [fd bot_speed + random (0.05 * bot_speed) set bounced? false stop] ;;introduce speed error
+  [fd bot_speed set bounced? false stop]
   ;;end step 1
 
   ;;step 2
+  separate ;; poll passive IR for Front, Right, Left adjust heading as needed
+  ;;todo
+  ;;end step 2
 
 
+  ;;step 4
+  fd bot_speed ;;+ random (0.05 * bot_speed) ;;just move forward...no reaction event
 
 end
 
 to separate
+  let changed false
+  find-flockmates
+
 
 end
 
-to bounce
-  ; check: hitting left or right wall?
-  if [pcolor] of patch-ahead bot_speed = white
-    ; if so, reflect heading around x axis
-    [ set heading (- heading) set bounced? true ]
-  ; check: hitting top or bottom wall?
-  if [pcolor] of patch-ahead bot_speed = white
-    ; if so, reflect heading around y axis
-    [ set heading (180 - heading) set bounced? true ]
+to bounce ;;currently imperfect
+  if [pcolor] of patch-ahead bot_speed = white or [pcolor] of patch-ahead bot_speed - 1 = white or [pcolor] of patch-ahead bot_speed - 2 = white
+    [ set heading (180 + heading + random 45) set bounced? true]
+end
+
+to find-flockmates  ;; turtle procedure
+  set flockmates other turtles in-radius sensor_range
+  compute-r_val
+end
+
+to compute-r_val ;;in a pickle....i would imagine I should only react to people on my right side....pointing their heading towards me....
+  let myTurtle turtle who let willTurn 0 let myHeading heading
+  ;;ask flockmates
+ ;; [if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
+  ;;if[numMatter > 0]
+
+end
+
+to compute-l_val
+
+end
+
+to compute-f_val
+
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -149,7 +185,7 @@ numbots
 numbots
 1
 100
-23
+6
 1
 1
 NIL
@@ -164,7 +200,7 @@ bot_speed
 bot_speed
 0.9
 3
-1.5
+3
 0.3
 1
 NIL
