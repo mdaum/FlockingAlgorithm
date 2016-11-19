@@ -5,6 +5,8 @@ globals[
   ir_z3 ;; zone 3 threshold
   ir_z4 ;; zone 4 threshold
   sensor_range ;;max range of ir sensors
+  turn_diff
+  bot_speed
 ]
 
 turtles-own[
@@ -22,12 +24,14 @@ turtles-own[
 to draw_walls ;;will make white border on walls
   ask patches with [abs pxcor > max-pxcor - 2] [set pcolor white]
     ask patches with [abs pycor > max-pycor - 2][ set pcolor white ]
-    ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
+    ;;ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
 
 end
 
 to setup
   clear-all
+  set bot_speed 3.0
+  set turn_diff 2
   draw_walls ;;walls are white
   set my_size bot_speed / 3 ;;size is based off of speed
   ;;set all ir thresholds
@@ -64,9 +68,10 @@ end
 to go ;;all turtles move one step...tick clock
   ask turtles [computeNewHeading]
   ask turtles [set heading heading + newHeading set newHeading 0]
-  ask turtles [fd bot_speed] ;;+ random (0.05 * bot_speed) ;;just move forward...no reaction event
+  ask turtles [fd bot_speed / 60 + random (0.05 * (bot_speed / 30))] ;;just move forward...no reaction event
   ask patches [if pcolor = blue [set pcolor black]]
   ask patches [if pcolor = red [set pcolor black]]
+  ask patches [if pcolor = yellow[set pcolor black]]
   tick
 end
 
@@ -79,7 +84,9 @@ to computeNewHeading ;;first adjust heading depending on if at wall, then make m
 
   ;;step 2
   separate ;; poll passive IR for Front, Right, Left adjust heading as needed
+  if separated? = true[set separated? false stop]
   ;;todo
+
   ;;end step 2
 
 
@@ -91,6 +98,12 @@ end
 to separate
   let changed false
   find-flockmates
+  if r_val > ir_z2 [set separated? true set newHeading newHeading - turn_diff]
+  if l_val > ir_z2 [set separated? true set newHeading newHeading + turn_diff]
+  if f_val > ir_z2 [set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff] if turn = 1 [set newHeading newHeading - turn_diff]]
+  set r_val 0 set l_val 0 set f_val 0
+
+
 
 
 end
@@ -114,10 +127,13 @@ to compute-r_val ;;in a pickle....i would imagine I should only react to people 
   let myTurtle turtle who let willTurn 0  let curr 0 let numMatter 0 let diffheading subtract-headings 0 heading ;;compute average distance of ppl triggering sensor
   ask flockmates[
     if (heading + diffheading) >= 225 and (heading + diffheading) <= 314[
-      show "I'm right"
-
+        if willHitTarget myTurtle self [show "I'm right"
+                  set curr curr + distance myTurtle
+                  set numMatter numMatter + 1
+          ]
+      ]
     ]
-  ]
+  if numMatter > 0 [set r_val curr / numMatter + random (0.05 * curr / numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 
 end
@@ -126,27 +142,78 @@ to compute-l_val
     let myTurtle turtle who let willTurn 0  let curr 0 let numMatter 0 let diffheading subtract-headings 0 heading ;;compute average distance of ppl triggering sensor
   ask flockmates[
     if (heading + diffheading) >= 45 and (heading + diffheading) <= 134 [
-      show "I'm left!"
+      if willHitTarget myTurtle self [show "I'm left!"
+                set curr curr + distance myTurtle
+                set numMatter numMatter + 1
+        ]
       ]
     ]
+  if numMatter > 0 [set l_val curr / numMatter + random (0.05 * curr / numMatter)]
 end
 
 to compute-f_val
     let myTurtle turtle who let willTurn 0  let curr 0 let numMatter 0 let diffheading subtract-headings 0 heading ;;compute average distance of ppl triggering sensor
   ask flockmates[
     if (heading + diffheading) >= 135 and (heading + diffheading) <= 224[
-      show "I'm front!"
+      if willHitTarget myTurtle self [show "I'm front!"
+        set curr curr + distance myTurtle
+        set numMatter numMatter + 1
+        ]
       ]
     ]
+  if numMatter > 0 [set f_val curr / numMatter + random (0.05 * curr / numMatter)]
 end
 
 to compute-b_val
     let myTurtle turtle who let willTurn 0  let curr 0 let numMatter 0 let diffheading subtract-headings 0 heading ;;compute average distance of ppl triggering sensor
   ask flockmates[
-    if (heading + diffheading) >= 315 and (heading + diffheading) <= 44[
-      show "I'm back!"
+    if (heading + diffheading) >= 315 or (heading + diffheading) <= 44[
+      if willHitTarget myTurtle self [show "I'm back!"
+                set curr curr + distance myTurtle
+                set numMatter numMatter + 1 ]
       ]
     ]
+  if numMatter > 0 [set b_val curr / numMatter + random (0.05 * curr / numMatter)]
+end
+
+
+to-report willHitTarget [target_turtle question_turtle]
+      let looking true
+      let willhit false
+      let range 3
+      if [pcolor] of patch-ahead 2 = white[set range 2]
+      if [pcolor] of patch-ahead 1 = white[set range 1]
+      ;;if any? turtles-on patch-ahead 1
+      ask question_turtle[ask patch-ahead 1 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+      ask question_turtle[ask patch-ahead 2 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+      ask question_turtle[ask patch-ahead 3 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+      ;;wait 1 ;;better for seeing sensor triggering
+
+      ask question_turtle[
+         if member? target_turtle turtles-on [neighbors4] of patch-ahead 1 or member? target_turtle turtles-on patch-ahead 1 [
+            set looking false
+            set willhit true
+           ]
+        ]
+
+     if looking = false or range = 1 [report willhit]
+
+      ask question_turtle[
+         if member? target_turtle turtles-on [neighbors4] of patch-ahead 2 or member? target_turtle turtles-on patch-ahead 2[
+            set looking false
+            set willhit true
+           ]
+        ]
+
+      if looking = false or range = 2 [report willhit]
+
+      ask question_turtle[
+         if member? target_turtle turtles-on [neighbors4] of patch-ahead 3 or member? target_turtle turtles-on patch-ahead 3[
+            set looking false
+            set willhit true
+           ]
+        ]
+      report willhit
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -200,7 +267,7 @@ BUTTON
 67
 NIL
 go
-NIL
+T
 1
 T
 OBSERVER
@@ -221,21 +288,6 @@ numbots
 100
 4
 1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-22
-165
-194
-198
-bot_speed
-bot_speed
-0.9
-3
-3
-0.3
 1
 NIL
 HORIZONTAL
