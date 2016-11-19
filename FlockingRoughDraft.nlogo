@@ -31,8 +31,8 @@ end
 to setup
   clear-all
   set bot_speed 3.0
-  set turn_diff 2
-  draw_walls ;;walls are white
+  set turn_diff 4
+  ;;draw_walls ;;walls are white
   set my_size bot_speed / 3 ;;size is based off of speed
   ;;set all ir thresholds
   set ir_z1 my_size
@@ -45,7 +45,7 @@ to setup
   [
     set color sky ;;random shading of sky blue
     set size my_size
-    ;;set shape "circle"
+    set shape "circle"
     place_randomly
     set flockmates no-turtles ;;flockmates set for each turtle starts as empty set
     set bounced? false
@@ -69,9 +69,9 @@ to go ;;all turtles move one step...tick clock
   ask turtles [computeNewHeading]
   ask turtles [set heading heading + newHeading set newHeading 0]
   ask turtles [fd bot_speed / 60 + random (0.05 * (bot_speed / 30))] ;;just move forward...no reaction event
-  ask patches [if pcolor = blue [set pcolor black]]
-  ask patches [if pcolor = red [set pcolor black]]
-  ask patches [if pcolor = yellow[set pcolor black]]
+  ;;ask patches [if pcolor = blue [set pcolor black]]
+  ;;ask patches [if pcolor = red [set pcolor black]]
+  ;;ask patches [if pcolor = yellow[set pcolor black]]
   tick
 end
 
@@ -115,8 +115,8 @@ end
 
 to find-flockmates  ;; turtle procedure
   set flockmates other turtles in-radius sensor_range
-  ask flockmates[set pcolor red]
-  ask patches in-radius sensor_range[if pcolor != white [set pcolor blue]]
+  ;;ask flockmates[set pcolor red]
+  ;;ask patches in-radius sensor_range[if pcolor != white [set pcolor blue]]
   compute-r_val
   compute-l_val
   compute-f_val
@@ -184,9 +184,9 @@ to-report willHitTarget [target_turtle question_turtle]
       if [pcolor] of patch-ahead 2 = white[set range 2]
       if [pcolor] of patch-ahead 1 = white[set range 1]
       ;;if any? turtles-on patch-ahead 1
-      ask question_turtle[ask patch-ahead 1 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
-      ask question_turtle[ask patch-ahead 2 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
-      ask question_turtle[ask patch-ahead 3 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+      ;;ask question_turtle[ask patch-ahead 1 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+      ;;ask question_turtle[ask patch-ahead 2 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+      ;;ask question_turtle[ask patch-ahead 3 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
       ;;wait 1 ;;better for seeing sensor triggering
 
       ask question_turtle[
@@ -286,7 +286,7 @@ numbots
 numbots
 1
 100
-4
+20
 1
 1
 NIL
