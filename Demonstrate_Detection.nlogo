@@ -5,7 +5,8 @@ globals[
   ir_z3 ;; zone 3 threshold
   ir_z4 ;; zone 4 threshold
   sensor_range ;;max range of ir sensors
-  turn_diff
+  turn_diff_sep
+  turn_diff_co
   bot_speed
 ]
 
@@ -31,7 +32,8 @@ end
 to setup
   clear-all
   set bot_speed 3.0
-  set turn_diff 4
+  set turn_diff_sep 10
+  set turn_diff_co 4
   ;;draw_walls ;;walls are white
   set my_size bot_speed / 3 ;;size is based off of speed
   ;;set all ir thresholds
@@ -68,7 +70,7 @@ end
 to go ;;all turtles move one step...tick clock
   ask turtles [computeNewHeading]
   ask turtles [set heading heading + newHeading set newHeading 0]
-  ask turtles [fd bot_speed / 60 + random (0.05 * (bot_speed / 30))] ;;just move forward...no reaction event
+  ask turtles [fd bot_speed / 60 + random (0.05 * (bot_speed / 60))] ;;just move forward...no reaction event
   ask patches [if pcolor = blue [set pcolor black]]
   ask patches [if pcolor = red [set pcolor black]]
   ask patches [if pcolor = yellow[set pcolor black]]
@@ -84,28 +86,34 @@ to computeNewHeading ;;first adjust heading depending on if at wall, then make m
 
   ;;step 2
   separate ;; poll passive IR for Front, Right, Left adjust heading as needed
-  if separated? = true[set separated? false stop]
-  ;;todo
-
+  if separated? = true[show "separated!" set separated? false stop]
   ;;end step 2
 
-
-  ;;step 4
-
+  ;;step 3
+  cohesion
+  if cohesioned? = true [show "cohesioned!" set cohesioned? false stop] ;;poll passive IR for left right, front, adjust heading
+  ;;end step 3
 
 end
 
 to separate
   let changed false
   find-flockmates
-  if r_val > ir_z2 [set separated? true set newHeading newHeading - turn_diff]
-  if l_val > ir_z2 [set separated? true set newHeading newHeading + turn_diff]
-  if f_val > ir_z2 [set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff] if turn = 1 [set newHeading newHeading - turn_diff] ]
+  if r_val > ir_z2 [set separated? true set newHeading newHeading - turn_diff_sep]
+  if l_val > ir_z2 [set separated? true set newHeading newHeading + turn_diff_sep]
+  if f_val > ir_z2 [set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff_sep] if turn = 1 [set newHeading newHeading - turn_diff_sep] ]
   set r_val 0 set l_val 0 set f_val 0
 
-
-
 end
+
+to cohesion
+  find-flockmates
+  if r_val < ir_z3 and r_val != 0 [set cohesioned? true set newHeading newHeading + turn_diff_co]
+  if l_val < ir_z3 and l_val != 0[set cohesioned? true set newHeading newHeading - turn_diff_co]
+  if b_val < ir_z4 and b_val != 0 [set cohesioned? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff_co] if turn = 1 [set newHeading newHeading - turn_diff_co] ]
+  set r_val 0 set l_val 0 set b_val 0
+end
+
 
 to bounce ;;currently imperfect
   if [pcolor] of patch-ahead bot_speed = white or [pcolor] of patch-ahead bot_speed - 1 = white or [pcolor] of patch-ahead bot_speed - 2 = white
@@ -285,7 +293,7 @@ numbots
 numbots
 1
 100
-8
+6
 1
 1
 NIL

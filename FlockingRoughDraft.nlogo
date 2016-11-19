@@ -85,26 +85,26 @@ to computeNewHeading ;;first adjust heading depending on if at wall, then make m
   ;;step 2
   separate ;; poll passive IR for Front, Right, Left adjust heading as needed
   if separated? = true[set separated? false stop]
-  ;;todo
-
   ;;end step 2
 
-
-  ;;step 4
+  ;;step 3
+  cohesion
+  if cohesioned? = true [set cohesioned? false stop] ;;poll passive IR for left right, front, adjust heading
+  ;;end step 3
 
 
 end
 
 to separate
-  let changed false
   find-flockmates
   if r_val > ir_z2 [set separated? true set newHeading newHeading - turn_diff]
   if l_val > ir_z2 [set separated? true set newHeading newHeading + turn_diff]
   if f_val > ir_z2 [set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff] if turn = 1 [set newHeading newHeading - turn_diff]]
   set r_val 0 set l_val 0 set f_val 0
 
+ end
 
-
+to cohesion
 
 end
 
