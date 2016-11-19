@@ -32,8 +32,8 @@ end
 to setup
   clear-all
   set bot_speed 3.0
-  set turn_diff_sep 10
-  set turn_diff_co 4
+  set turn_diff_sep 4
+  set turn_diff_co 6
   ;;draw_walls ;;walls are white
   set my_size bot_speed / 3 ;;size is based off of speed
   ;;set all ir thresholds
