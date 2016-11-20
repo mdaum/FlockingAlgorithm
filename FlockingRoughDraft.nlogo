@@ -5,7 +5,8 @@ globals[
   ir_z3 ;; zone 3 threshold
   ir_z4 ;; zone 4 threshold
   sensor_range ;;max range of ir sensors
-  turn_diff
+  turn_diff_sep
+  turn_diff_co
   bot_speed
 ]
 
@@ -31,7 +32,8 @@ end
 to setup
   clear-all
   set bot_speed 3.0
-  set turn_diff 4
+  set turn_diff_sep 4
+  set turn_diff_co 6
   ;;draw_walls ;;walls are white
   set my_size bot_speed / 3 ;;size is based off of speed
   ;;set all ir thresholds
@@ -45,7 +47,7 @@ to setup
   [
     set color sky ;;random shading of sky blue
     set size my_size
-    set shape "circle"
+    ;;set shape "circle"
     place_randomly
     set flockmates no-turtles ;;flockmates set for each turtle starts as empty set
     set bounced? false
@@ -66,12 +68,12 @@ to place_randomly ;;randomly places a bot...avoids starting too close to wall
 end
 
 to go ;;all turtles move one step...tick clock
-  ask turtles [computeNewHeading]
+  ask turtles [computeNewHeading set flockmates no-turtles]
   ask turtles [set heading heading + newHeading set newHeading 0]
-  ask turtles [fd bot_speed / 60 + random (0.05 * (bot_speed / 30))] ;;just move forward...no reaction event
-  ;;ask patches [if pcolor = blue [set pcolor black]]
-  ;;ask patches [if pcolor = red [set pcolor black]]
-  ;;ask patches [if pcolor = yellow[set pcolor black]]
+  ask turtles [fd bot_speed / 60 + random (0.05 * (bot_speed / 60))] ;;just move forward...no reaction event
+  ask patches [if pcolor = blue [set pcolor black]]
+  ask patches [if pcolor = red [set pcolor black]]
+  ask patches [if pcolor = yellow[set pcolor black]]
   tick
 end
 
@@ -84,29 +86,34 @@ to computeNewHeading ;;first adjust heading depending on if at wall, then make m
 
   ;;step 2
   separate ;; poll passive IR for Front, Right, Left adjust heading as needed
-  if separated? = true[set separated? false stop]
+  if separated? = true[show "separated!" set separated? false stop]
   ;;end step 2
 
   ;;step 3
   cohesion
-  if cohesioned? = true [set cohesioned? false stop] ;;poll passive IR for left right, front, adjust heading
+  if cohesioned? = true [show "cohesioned!" set cohesioned? false stop] ;;poll passive IR for left right, front, adjust heading
   ;;end step 3
-
 
 end
 
 to separate
+  let changed false
   find-flockmates
-  if r_val > ir_z2 [set separated? true set newHeading newHeading - turn_diff]
-  if l_val > ir_z2 [set separated? true set newHeading newHeading + turn_diff]
-  if f_val > ir_z2 [set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff] if turn = 1 [set newHeading newHeading - turn_diff]]
-  set r_val 0 set l_val 0 set f_val 0
-
- end
-
-to cohesion
+  if r_val < ir_z2 and r_val != 0 [set separated? true set newHeading newHeading - turn_diff_sep]
+  if l_val < ir_z2 and l_val != 0 [set separated? true set newHeading newHeading + turn_diff_sep]
+  if f_val < ir_z2 and f_val != 0[set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff_sep] if turn = 1 [set newHeading newHeading - turn_diff_sep] ]
+  set r_val 0 set l_val 0 set f_val 0 set b_val 0
 
 end
+
+to cohesion
+  find-flockmates
+  if r_val > ir_z3 and r_val != 0 [set cohesioned? true set newHeading newHeading + turn_diff_co]
+  if l_val > ir_z3 and l_val != 0[set cohesioned? true set newHeading newHeading - turn_diff_co]
+  if b_val > ir_z4 and b_val != 0 [set cohesioned? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff_co] if turn = 1 [set newHeading newHeading - turn_diff_co] ]
+  set r_val 0 set l_val 0 set b_val 0 set f_val 0
+end
+
 
 to bounce ;;currently imperfect
   if [pcolor] of patch-ahead bot_speed = white or [pcolor] of patch-ahead bot_speed - 1 = white or [pcolor] of patch-ahead bot_speed - 2 = white
@@ -115,8 +122,8 @@ end
 
 to find-flockmates  ;; turtle procedure
   set flockmates other turtles in-radius sensor_range
-  ;;ask flockmates[set pcolor red]
-  ;;ask patches in-radius sensor_range[if pcolor != white [set pcolor blue]]
+ ;; ask flockmates[set pcolor red]
+ ;; ask patches in-radius sensor_range[if pcolor != white [set pcolor blue]]
   compute-r_val
   compute-l_val
   compute-f_val
@@ -180,13 +187,17 @@ end
 to-report willHitTarget [target_turtle question_turtle]
       let looking true
       let willhit false
-      let range 3
+      let range 5
+      if [pcolor] of patch-ahead 4 = white[set range 4]
+      if [pcolor] of patch-ahead 3 = white[set range 3]
       if [pcolor] of patch-ahead 2 = white[set range 2]
       if [pcolor] of patch-ahead 1 = white[set range 1]
       ;;if any? turtles-on patch-ahead 1
-      ;;ask question_turtle[ask patch-ahead 1 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
-      ;;ask question_turtle[ask patch-ahead 2 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
-      ;;ask question_turtle[ask patch-ahead 3 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+;      ask question_turtle[ask patch-ahead 1 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+;      ask question_turtle[ask patch-ahead 2 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+;      ask question_turtle[ask patch-ahead 3 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+;      ask question_turtle[ask patch-ahead 4 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
+;      ask question_turtle[ask patch-ahead 5 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
       ;;wait 1 ;;better for seeing sensor triggering
 
       ask question_turtle[
@@ -209,6 +220,25 @@ to-report willHitTarget [target_turtle question_turtle]
 
       ask question_turtle[
          if member? target_turtle turtles-on [neighbors4] of patch-ahead 3 or member? target_turtle turtles-on patch-ahead 3[
+            set looking false
+            set willhit true
+           ]
+        ]
+      if looking = false or range = 3 [report willhit]
+
+
+       ask question_turtle[
+         if member? target_turtle turtles-on [neighbors4] of patch-ahead 4 or member? target_turtle turtles-on patch-ahead 4[
+            set looking false
+            set willhit true
+           ]
+        ]
+      if looking = false or range = 4 [report willhit]
+
+
+
+       ask question_turtle[
+         if member? target_turtle turtles-on [neighbors4] of patch-ahead 5 or member? target_turtle turtles-on patch-ahead 5[
             set looking false
             set willhit true
            ]
@@ -286,7 +316,7 @@ numbots
 numbots
 1
 100
-20
+2
 1
 1
 NIL

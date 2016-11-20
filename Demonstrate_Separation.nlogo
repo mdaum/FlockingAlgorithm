@@ -98,12 +98,10 @@ end
 to separate
   let changed false
   find-flockmates
-  if r_val > ir_z2 [set separated? true set newHeading newHeading - turn_diff]
-  if l_val > ir_z2 [set separated? true set newHeading newHeading + turn_diff]
-  if f_val > ir_z2 [set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff] if turn = 1 [set newHeading newHeading - turn_diff] ]
-  set r_val 0 set l_val 0 set f_val 0
-
-
+  if r_val < ir_z2 and r_val != 0 [set separated? true set newHeading newHeading - turn_diff]
+  if l_val < ir_z2 and l_val != 0 [set separated? true set newHeading newHeading + turn_diff]
+  if f_val < ir_z2 and f_val != 0[set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff] if turn = 1 [set newHeading newHeading - turn_diff] ]
+  set r_val 0 set l_val 0 set f_val 0 set b_val 0
 
 end
 
