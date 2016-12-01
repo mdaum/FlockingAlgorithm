@@ -8,6 +8,7 @@ globals[
   turn_diff_sep
   turn_diff_co
   bot_speed
+  Flock_Dist
 ]
 
 turtles-own[
@@ -16,16 +17,18 @@ turtles-own[
   separated?
   cohesioned?
   newHeading
+  wait?
   r_val
   l_val
   f_val
   b_val
+  totalDist
 ]
 
 to draw_walls ;;will make white border on walls
-  ask patches with [abs pxcor > max-pxcor - 2] [set pcolor white]
-    ask patches with [abs pycor > max-pycor - 2][ set pcolor white ]
-    ;;ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
+  ;;ask patches with [abs pxcor > max-pxcor - 2] [set pcolor white]
+    ;;ask patches with [abs pycor > max-pycor - 2][ set pcolor white ]
+    ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
 
 end
 
@@ -33,7 +36,7 @@ to setup
   clear-all
   set bot_speed 3.0
   set turn_diff_sep 1
-  set turn_diff_co 1
+  set turn_diff_co 1 / 2
   ;;draw_walls ;;walls are white
   set my_size bot_speed / 3 ;;size is based off of speed
   ;;set all ir thresholds
@@ -47,16 +50,19 @@ to setup
   [
     set color sky ;;random shading of sky blue
     set size my_size
-    ;;set shape "circle"
+    set shape "circle"
     place_randomly
     set flockmates no-turtles ;;flockmates set for each turtle starts as empty set
     set bounced? false
     set separated? false
     set cohesioned? false
+    set wait? false
     set label who
     set label-color green
+    set totalDist 0
     ;;show xcor show ycor show heading
   ]
+  place_in_flock
   reset-ticks
 end
 
@@ -67,13 +73,39 @@ to place_randomly ;;randomly places a bot...avoids starting too close to wall
   if abs [pycor] of patch-ahead bot_speed = max-pycor [place_randomly]
 end
 
+to Reset_Ticks
+  reset-ticks
+end
+
+to place_in_flock
+  layout-circle turtles 3
+  ask turtles[
+    set heading random 360
+    ]
+end
+
+to Reset_Bot_Dist
+  ask turtles[
+    set totalDist 0
+    ]
+end
+
+to Start_Flock_Dist_Capture
+end
+
+to Reset_Flock_Dist
+  set Flock_Dist 0
+end
+
+
 to go ;;all turtles move one step...tick clock
+  if ticks = 10800 [stop]
   ask turtles [computeNewHeading set flockmates no-turtles]
   ask turtles [set heading heading + newHeading set newHeading 0]
-  ask turtles [fd bot_speed / 60 + random (0.05 * (bot_speed / 60))] ;;just move forward...no reaction event
-  ask patches [if pcolor = blue [set pcolor black]]
-  ask patches [if pcolor = red [set pcolor black]]
-  ask patches [if pcolor = yellow[set pcolor black]]
+  ask turtles [ifelse wait? = false[ let temp bot_speed / 60 + random (0.05 * (bot_speed / 60))  fd temp set totalDist (totalDist + temp)] [set wait? false]] ;;just move forward...no reaction event
+ ;; ask patches [if pcolor = blue [set pcolor black]]
+ ;; ask patches [if pcolor = red [set pcolor black]]
+ ;; ask patches [if pcolor = yellow[set pcolor black]]
   tick
 end
 
@@ -91,13 +123,12 @@ to computeNewHeading ;;first adjust heading depending on if at wall, then make m
 
   ;;step 3
   cohesion
-  if cohesioned? = true [ set cohesioned? false stop] ;;poll passive IR for left right, front, adjust heading
+  if cohesioned? = true [set cohesioned? false stop] ;;poll passive IR for left right, front, adjust heading
   ;;end step 3
 
 end
 
 to separate
-  let changed false
   find-flockmates
   if r_val < ir_z2 and r_val != 0 [set separated? true set newHeading newHeading - turn_diff_sep]
   if l_val < ir_z2 and l_val != 0 [set separated? true set newHeading newHeading + turn_diff_sep]
@@ -107,21 +138,58 @@ to separate
 end
 
 to cohesion
-  find-flockmates
-  if r_val > ir_z3 and r_val != 0 [set cohesioned? true set newHeading newHeading + turn_diff_co]
-  if l_val > ir_z3 and l_val != 0[set cohesioned? true set newHeading newHeading - turn_diff_co]
-  if b_val > ir_z4 and b_val != 0 [set cohesioned? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff_co] if turn = 1 [set newHeading newHeading - turn_diff_co] ]
-  set r_val 0 set l_val 0 set b_val 0 set f_val 0
+   if any? flockmates[
+    turn-towards average-flockmate-heading turn_diff_co
+    turn-towards average-heading-towards-flockmates turn_diff_co
+   ]
 end
 
+to turn-at-most [turn max-turn]  ;; turtle procedure
+  ifelse abs turn > max-turn
+    [ ifelse turn > 0
+        [ rt max-turn ]
+        [ lt max-turn ] ]
+    [ rt turn ]
+end
+
+;;credit to Uri Wilensky for average flocking heading procedure using netLogo's trig functions...
+to-report average-flockmate-heading  ;; turtle procedure
+  ;; We can't just average the heading variables here.
+  ;; For example, the average of 1 and 359 should be 0,
+  ;; not 180.  So we have to use trigonometry.
+  let x-component sum [dx] of flockmates
+  let y-component sum [dy] of flockmates
+  ifelse x-component = 0 and y-component = 0
+    [ report heading ]
+    [ report atan x-component y-component + ((random 36 - random 36) / count flockmates) ] ;;introducing rf error
+end
+;;credit to Uri Wilensky for average flocking heading procedure using netLogo's trig functions...
+to-report average-heading-towards-flockmates  ;; turtle procedure
+  ;; "towards myself" gives us the heading from the other turtle
+  ;; to me, but we want the heading from me to the other turtle,
+  ;; so we add 180
+  let x-component mean [sin (towards myself + 180)] of flockmates
+  let y-component mean [cos (towards myself + 180)] of flockmates
+  ifelse x-component = 0 and y-component = 0
+    [ report heading ]
+    [ report atan x-component y-component ]
+end
+
+to turn-towards [new-heading max-turn]  ;; turtle procedure
+  turn-at-most (subtract-headings new-heading heading) max-turn
+end
+
+to turn-away [new-heading max-turn]  ;; turtle procedure
+  turn-at-most (subtract-headings heading new-heading) max-turn
+end
 
 to bounce ;;currently imperfect
   if [pcolor] of patch-ahead bot_speed = white or [pcolor] of patch-ahead bot_speed - 1 = white or [pcolor] of patch-ahead bot_speed - 2 = white
-    [ set newHeading (180 + random 45) set bounced? true]
+    [ set newHeading (180 + random 5) set bounced? true]
 end
 
 to find-flockmates  ;; turtle procedure
-  ;;set flockmates other turtles in-radius sensor_range
+  set flockmates other turtles in-radius sensor_range
  ;; ask flockmates[set pcolor red]
  ;; ask patches in-radius sensor_range[if pcolor != white [set pcolor blue]]
   compute-r_val
@@ -178,10 +246,10 @@ to compute-b_val
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-215
-15
-1248
-494
+266
+33
+1299
+512
 44
 19
 11.5
@@ -247,11 +315,79 @@ numbots
 numbots
 1
 100
-6
+8
 1
 1
 NIL
 HORIZONTAL
+
+BUTTON
+61
+206
+158
+239
+NIL
+Reset_Ticks
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+68
+266
+185
+299
+NIL
+Reset_Bot_Dist
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+44
+333
+217
+366
+NIL
+Start_Flock_Dist_Capture
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+74
+410
+200
+443
+NIL
+Reset_Flock_Dist
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?

@@ -24,9 +24,9 @@ turtles-own[
 ]
 
 to draw_walls ;;will make white border on walls
-  ask patches with [abs pxcor > max-pxcor - 2] [set pcolor white]
-    ask patches with [abs pycor > max-pycor - 2][ set pcolor white ]
-    ;;ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
+  ;;ask patches with [abs pxcor > max-pxcor - 2] [set pcolor white]
+    ;;ask patches with [abs pycor > max-pycor - 2][ set pcolor white ]
+    ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
 
 end
 
@@ -131,7 +131,7 @@ to-report average-flockmate-heading  ;; turtle procedure
   let y-component sum [dy] of flockmates
   ifelse x-component = 0 and y-component = 0
     [ report heading ]
-    [ report atan x-component y-component ]
+    [ report atan x-component y-component + ((random 36 - random 36) / count flockmates)]
 end
 ;;credit to Uri Wilensky for average flocking heading procedure using netLogo's trig functions...
 to-report average-heading-towards-flockmates  ;; turtle procedure
@@ -155,7 +155,7 @@ end
 
 to bounce ;;currently imperfect
   if [pcolor] of patch-ahead bot_speed = white or [pcolor] of patch-ahead bot_speed - 1 = white or [pcolor] of patch-ahead bot_speed - 2 = white
-    [ set newHeading (180 + random 45) set bounced? true]
+    [ set newHeading (180 + random 5) set bounced? true]
 end
 
 to find-flockmates  ;; turtle procedure
@@ -176,7 +176,7 @@ to compute-r_val ;;in a pickle....i would imagine I should only react to people 
   ask r_mates[
          if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set r_val numMatter + random (0.05 * numMatter)]
+  if numMatter < 6 [set r_val numMatter + random (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 
 end
@@ -189,7 +189,7 @@ to compute-l_val
   ask l_mates[
          if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set l_val numMatter + random (0.05 * numMatter)]
+  if numMatter < 6 [set l_val numMatter + random (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 
@@ -199,7 +199,7 @@ to compute-f_val
   ask f_mates[
        if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set f_val numMatter + random (0.05 * numMatter)]
+  if numMatter < 6 [set f_val numMatter + random (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 
@@ -211,7 +211,7 @@ to compute-b_val
   ask b_mates[
          if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set b_val numMatter + random (0.05 * numMatter)]
+  if numMatter < 6 [set b_val numMatter + random (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 @#$#@#$#@
