@@ -5,8 +5,7 @@ globals[
   ir_z3 ;; zone 3 threshold
   ir_z4 ;; zone 4 threshold
   sensor_range ;;max range of ir sensors
-  turn_diff_sep
-  turn_diff_co
+  turn_diff
   bot_speed
 ]
 
@@ -32,9 +31,8 @@ end
 to setup
   clear-all
   set bot_speed 3.0
-  set turn_diff_sep 4
-  set turn_diff_co 6
-  ;;draw_walls ;;walls are white
+  set turn_diff 4
+ ;; draw_walls ;;walls are white
   set my_size bot_speed / 3 ;;size is based off of speed
   ;;set all ir thresholds
   set ir_z1 my_size
@@ -68,9 +66,9 @@ to place_randomly ;;randomly places a bot...avoids starting too close to wall
 end
 
 to go ;;all turtles move one step...tick clock
-  ask turtles [computeNewHeading set flockmates no-turtles]
+  ask turtles [computeNewHeading]
   ask turtles [set heading heading + newHeading set newHeading 0]
-  ask turtles [fd bot_speed / 60 + random (0.05 * (bot_speed / 60))] ;;just move forward...no reaction event
+  ask turtles [fd bot_speed / 60 + random (0.05 * (bot_speed / 30))] ;;just move forward...no reaction event
   ask patches [if pcolor = blue [set pcolor black]]
   ask patches [if pcolor = red [set pcolor black]]
   ask patches [if pcolor = yellow[set pcolor black]]
@@ -86,39 +84,32 @@ to computeNewHeading ;;first adjust heading depending on if at wall, then make m
 
   ;;step 2
   separate ;; poll passive IR for Front, Right, Left adjust heading as needed
-  if separated? = true[show "separated!" set separated? false stop]
+  if separated? = true[set separated? false stop]
+  ;;todo
+
   ;;end step 2
 
-  ;;step 3
-  cohesion
-  if cohesioned? = true [show "cohesioned!" set cohesioned? false stop] ;;poll passive IR for left right, front, adjust heading
-  ;;end step 3
+
+  ;;step 4
+
 
 end
 
 to separate
   let changed false
   find-flockmates
-  if r_val < ir_z2 and r_val != 0 [set separated? true set newHeading newHeading - turn_diff_sep]
-  if l_val < ir_z2 and l_val != 0 [set separated? true set newHeading newHeading + turn_diff_sep]
-  if f_val < ir_z2 and f_val != 0[set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff_sep] if turn = 1 [set newHeading newHeading - turn_diff_sep] ]
+  if r_val < ir_z2 and r_val != 0 [set separated? true set newHeading newHeading - turn_diff]
+  if l_val < ir_z2 and l_val != 0 [set separated? true set newHeading newHeading + turn_diff]
+  if f_val < ir_z2 and f_val != 0[set separated? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff] if turn = 1 [set newHeading newHeading - turn_diff] ]
   set r_val 0 set l_val 0 set f_val 0 set b_val 0
 
 end
-
-to cohesion
-  find-flockmates
-  if r_val > ir_z3 and r_val != 0 [set cohesioned? true set newHeading newHeading + turn_diff_co]
-  if l_val > ir_z3 and l_val != 0[set cohesioned? true set newHeading newHeading - turn_diff_co]
-  if b_val > ir_z4 and b_val != 0 [set cohesioned? true let turn random 1 if turn = 0 [set newHeading newHeading + turn_diff_co] if turn = 1 [set newHeading newHeading - turn_diff_co] ]
-  set r_val 0 set l_val 0 set b_val 0 set f_val 0
-end
-
 
 to bounce ;;currently imperfect
   if [pcolor] of patch-ahead bot_speed = white or [pcolor] of patch-ahead bot_speed - 1 = white or [pcolor] of patch-ahead bot_speed - 2 = white
     [ set newHeading (180 + random 45) set bounced? true]
 end
+
 
 to find-flockmates  ;; turtle procedure
   set flockmates other turtles in-radius sensor_range
@@ -131,120 +122,52 @@ to find-flockmates  ;; turtle procedure
 end
 
 to compute-r_val ;;in a pickle....i would imagine I should only react to people on my right side....pointing their heading towards me....
-  let myTurtle turtle who let willTurn 0  let curr 0 let numMatter 0 let diffheading subtract-headings 0 heading ;;compute average distance of ppl triggering sensor
-  ask flockmates[
-    if (heading + diffheading) >= 225 and (heading + diffheading) <= 314[
-        if willHitTarget myTurtle self [show "I'm right"
-                  set curr curr + distance myTurtle
-                  set numMatter numMatter + 1
-          ]
-      ]
+  let myTurtle turtle who let numMatter 6  ;;compute average distance of ppl triggering sensor
+  rt 90
+  let r_mates other turtles in-cone sensor_range 90
+  lt 90
+  ask r_mates[
+         if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter > 0 [set r_val curr / numMatter + random (0.05 * curr / numMatter)]
+  if numMatter < 6 [set r_val numMatter + random (0.05 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 
 end
 
 to compute-l_val
-    let myTurtle turtle who let willTurn 0  let curr 0 let numMatter 0 let diffheading subtract-headings 0 heading ;;compute average distance of ppl triggering sensor
-  ask flockmates[
-    if (heading + diffheading) >= 45 and (heading + diffheading) <= 134 [
-      if willHitTarget myTurtle self [show "I'm left!"
-                set curr curr + distance myTurtle
-                set numMatter numMatter + 1
-        ]
-      ]
+  let myTurtle turtle who let numMatter 6 ;;compute average distance of ppl triggering sensor
+  lt 90
+  let l_mates other turtles in-cone sensor_range 90
+  rt 90
+  ask l_mates[
+         if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter > 0 [set l_val curr / numMatter + random (0.05 * curr / numMatter)]
+  if numMatter < 6 [set l_val numMatter + random (0.05 * numMatter)]
+  ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 
 to compute-f_val
-    let myTurtle turtle who let willTurn 0  let curr 0 let numMatter 0 let diffheading subtract-headings 0 heading ;;compute average distance of ppl triggering sensor
-  ask flockmates[
-    if (heading + diffheading) >= 135 and (heading + diffheading) <= 224[
-      if willHitTarget myTurtle self [show "I'm front!"
-        set curr curr + distance myTurtle
-        set numMatter numMatter + 1
-        ]
-      ]
+  let myTurtle turtle who let numMatter 6 ;;compute average distance of ppl triggering sensor
+  let f_mates other turtles in-cone sensor_range 90
+  ask f_mates[
+       if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter > 0 [set f_val curr / numMatter + random (0.05 * curr / numMatter)]
+  if numMatter < 6 [set f_val numMatter + random (0.05 * numMatter)]
+  ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 
 to compute-b_val
-    let myTurtle turtle who let willTurn 0  let curr 0 let numMatter 0 let diffheading subtract-headings 0 heading ;;compute average distance of ppl triggering sensor
-  ask flockmates[
-    if (heading + diffheading) >= 315 or (heading + diffheading) <= 44[
-      if willHitTarget myTurtle self [show "I'm back!"
-                set curr curr + distance myTurtle
-                set numMatter numMatter + 1 ]
-      ]
+  let myTurtle turtle who let numMatter 6 ;;compute average distance of ppl triggering sensor
+  lt 180
+  let b_mates other turtles in-cone sensor_range 90
+  rt 180
+  ask b_mates[
+         if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter > 0 [set b_val curr / numMatter + random (0.05 * curr / numMatter)]
+  if numMatter < 6 [set b_val numMatter + random (0.05 * numMatter)]
+  ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 
-
-to-report willHitTarget [target_turtle question_turtle]
-      let looking true
-      let willhit false
-      let range 5
-      if [pcolor] of patch-ahead 4 = white[set range 4]
-      if [pcolor] of patch-ahead 3 = white[set range 3]
-      if [pcolor] of patch-ahead 2 = white[set range 2]
-      if [pcolor] of patch-ahead 1 = white[set range 1]
-      ;;if any? turtles-on patch-ahead 1
-;      ask question_turtle[ask patch-ahead 1 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
-;      ask question_turtle[ask patch-ahead 2 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
-;      ask question_turtle[ask patch-ahead 3 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
-;      ask question_turtle[ask patch-ahead 4 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
-;      ask question_turtle[ask patch-ahead 5 [if pcolor != white [set pcolor yellow] ask neighbors4 [if pcolor != white [set pcolor yellow]]]]
-      ;;wait 1 ;;better for seeing sensor triggering
-
-      ask question_turtle[
-         if member? target_turtle turtles-on [neighbors4] of patch-ahead 1 or member? target_turtle turtles-on patch-ahead 1 [
-            set looking false
-            set willhit true
-           ]
-        ]
-
-     if looking = false or range = 1 [report willhit]
-
-      ask question_turtle[
-         if member? target_turtle turtles-on [neighbors4] of patch-ahead 2 or member? target_turtle turtles-on patch-ahead 2[
-            set looking false
-            set willhit true
-           ]
-        ]
-
-      if looking = false or range = 2 [report willhit]
-
-      ask question_turtle[
-         if member? target_turtle turtles-on [neighbors4] of patch-ahead 3 or member? target_turtle turtles-on patch-ahead 3[
-            set looking false
-            set willhit true
-           ]
-        ]
-      if looking = false or range = 3 [report willhit]
-
-
-       ask question_turtle[
-         if member? target_turtle turtles-on [neighbors4] of patch-ahead 4 or member? target_turtle turtles-on patch-ahead 4[
-            set looking false
-            set willhit true
-           ]
-        ]
-      if looking = false or range = 4 [report willhit]
-
-
-
-       ask question_turtle[
-         if member? target_turtle turtles-on [neighbors4] of patch-ahead 5 or member? target_turtle turtles-on patch-ahead 5[
-            set looking false
-            set willhit true
-           ]
-        ]
-      report willhit
-end
 @#$#@#$#@
 GRAPHICS-WINDOW
 215
@@ -316,7 +239,7 @@ numbots
 numbots
 1
 100
-2
+50
 1
 1
 NIL
