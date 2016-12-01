@@ -122,6 +122,7 @@ to turn-at-most [turn max-turn]  ;; turtle procedure
     [ rt turn ]
 end
 
+;;credit to Uri Wilensky for average flocking heading procedure using netLogo's trig functions...
 to-report average-flockmate-heading  ;; turtle procedure
   ;; We can't just average the heading variables here.
   ;; For example, the average of 1 and 359 should be 0,
@@ -132,7 +133,7 @@ to-report average-flockmate-heading  ;; turtle procedure
     [ report heading ]
     [ report atan x-component y-component ]
 end
-
+;;credit to Uri Wilensky for average flocking heading procedure using netLogo's trig functions...
 to-report average-heading-towards-flockmates  ;; turtle procedure
   ;; "towards myself" gives us the heading from the other turtle
   ;; to me, but we want the heading from me to the other turtle,
