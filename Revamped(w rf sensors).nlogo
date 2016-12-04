@@ -72,7 +72,7 @@ end
 to go ;;all turtles move one step...tick clock
   ask turtles [computeNewHeading set flockmates no-turtles]
   ask turtles [set heading heading + newHeading set newHeading 0]
-  ask turtles [ifelse wait? = false[ fd bot_speed / 60 + random (0.05 * (bot_speed / 60))] [set wait? false]] ;;just move forward...no reaction event
+  ask turtles [ifelse wait? = false[ fd bot_speed / 60 + random-float (0.05 * (bot_speed / 60))] [set wait? false]] ;;just move forward...no reaction event
  ;; ask patches [if pcolor = blue [set pcolor black]]
  ;; ask patches [if pcolor = red [set pcolor black]]
  ;; ask patches [if pcolor = yellow[set pcolor black]]
@@ -176,7 +176,7 @@ to compute-r_val ;;in a pickle....i would imagine I should only react to people 
   ask r_mates[
          if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set r_val numMatter + random (0.1 * numMatter)]
+  if numMatter < 6 [set r_val numMatter + random-float (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 
 end
@@ -189,7 +189,7 @@ to compute-l_val
   ask l_mates[
          if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set l_val numMatter + random (0.1 * numMatter)]
+  if numMatter < 6 [set l_val numMatter + random-float (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 
@@ -199,7 +199,7 @@ to compute-f_val
   ask f_mates[
        if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set f_val numMatter + random (0.1 * numMatter)]
+  if numMatter < 6 [set f_val numMatter + random-float (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 
@@ -211,7 +211,7 @@ to compute-b_val
   ask b_mates[
          if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set b_val numMatter + random (0.1 * numMatter)]
+  if numMatter < 6 [set b_val numMatter + random-float (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 @#$#@#$#@

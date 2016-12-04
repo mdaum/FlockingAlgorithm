@@ -9,6 +9,10 @@ globals[
   turn_diff_co
   bot_speed
   Flock_Dist
+  capFlockDist?
+  flock_x_pos
+  flock_y_pos
+  average_bot_dist
 ]
 
 turtles-own[
@@ -45,6 +49,7 @@ to setup
   set ir_z3 my_size * 2
   set ir_z4 my_size * 3.5
   set sensor_range my_size * 5
+  set capFlockDist? false
   ;;create all bots
   create-turtles numBots
   [
@@ -90,23 +95,48 @@ to Reset_Bot_Dist
     ]
 end
 
-to Start_Flock_Dist_Capture
+to Toggle_Flock_Dist_Capture
+  ifelse capFlockDist? = true[set capFlockDist? false][set capFlockDist? true]
 end
 
 to Reset_Flock_Dist
   set Flock_Dist 0
 end
 
+ to compute_Center_of_Mass
+  let x 0 let y 0 let num count turtles
+  ask turtles[
+    set x (x + xcor)
+    set y (y + ycor)
+    ]
+  set x (x / num)
+  set y (y / num)
+  create-turtles 1[set xcor x set ycor y set color red set label "com"]
+  create-turtles 1[set xcor flock_x_pos set ycor flock_y_pos set color green set label "com"]
+  ask one-of turtles with[label = "com"] [set Flock_Dist (Flock_Dist + (distance one-of other turtles with [label = "com"])) ]
+  set flock_x_pos x
+  set flock_y_pos y
+  ask turtles with [label = "com"][die]
+
+end
+
 
 to go ;;all turtles move one step...tick clock
-  if ticks = 10800 [stop]
+  if ticks = 10800 [compute_avg_bot_dist show "avg bot:" show average_bot_dist show "com" show Flock_Dist stop]
   ask turtles [computeNewHeading set flockmates no-turtles]
   ask turtles [set heading heading + newHeading set newHeading 0]
-  ask turtles [ifelse wait? = false[ let temp bot_speed / 60 + random (0.05 * (bot_speed / 60))  fd temp set totalDist (totalDist + temp)] [set wait? false]] ;;just move forward...no reaction event
+  ask turtles [ifelse wait? = false[ let temp bot_speed / 60 + random-float (0.05 * (bot_speed / 60))  fd temp set totalDist (totalDist + temp)] [set wait? false]] ;;just move forward...no reaction event
+  if capFlockDist? = true[compute_Center_of_Mass]
  ;; ask patches [if pcolor = blue [set pcolor black]]
  ;; ask patches [if pcolor = red [set pcolor black]]
  ;; ask patches [if pcolor = yellow[set pcolor black]]
   tick
+end
+
+to compute_avg_bot_dist
+  let temp 0
+  ask turtles[set temp (temp + totalDist)]
+  set average_bot_dist (temp / count turtles)
 end
 
 to computeNewHeading ;;first adjust heading depending on if at wall, then make movement decision
@@ -206,7 +236,7 @@ to compute-r_val ;;in a pickle....i would imagine I should only react to people 
   ask r_mates[
          if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set r_val numMatter + random (0.1 * numMatter)]
+  if numMatter < 6 [set r_val numMatter + random-float (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 
 end
@@ -219,7 +249,7 @@ to compute-l_val
   ask l_mates[
          if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set l_val numMatter + random (0.1 * numMatter)]
+  if numMatter < 6 [set l_val numMatter + random-float (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 
@@ -229,7 +259,7 @@ to compute-f_val
   ask f_mates[
        if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set f_val numMatter + random (0.1 * numMatter)]
+  if numMatter < 6 [set f_val numMatter + random-float (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 
@@ -241,7 +271,7 @@ to compute-b_val
   ask b_mates[
          if numMatter > distance myTurtle [set numMatter distance myTurtle]
     ]
-  if numMatter < 6 [set b_val numMatter + random (0.1 * numMatter)]
+  if numMatter < 6 [set b_val numMatter + random-float (0.1 * numMatter)]
   ;;[if (subtract-headings  ) <= 0 and abs (myX - xcor) < ir_z1 [set numMatter numMatter + 1]]
 end
 @#$#@#$#@
@@ -315,7 +345,7 @@ numbots
 numbots
 1
 100
-8
+1
 1
 1
 NIL
@@ -358,10 +388,10 @@ NIL
 BUTTON
 44
 333
-217
+226
 366
 NIL
-Start_Flock_Dist_Capture
+Toggle_Flock_Dist_Capture
 NIL
 1
 T
