@@ -30,10 +30,14 @@ turtles-own[
 ]
 
 to draw_walls ;;will make white border on walls
-  ;;ask patches with [abs pxcor > max-pxcor - 2] [set pcolor white]
-    ;;ask patches with [abs pycor > max-pycor - 2][ set pcolor white ]
-    ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
+  ask patches with [abs pxcor > max-pxcor - 2] [set pcolor white]
+    ask patches with [abs pycor > max-pycor - 2][ set pcolor white ]
+    ;;ask patches with [abs pxcor < 5 and abs pycor < 3] [set pcolor white] ;;create obstacle in center
 
+end
+
+to toggleInspect
+inspect turtle 0
 end
 
 to setup
@@ -41,7 +45,7 @@ to setup
   set bot_speed 3.0
   set turn_diff_sep 1
   set turn_diff_co 1 / 2
-  ;;draw_walls ;;walls are white
+  draw_walls ;;walls are white
   set my_size bot_speed / 3 ;;size is based off of speed
   ;;set all ir thresholds
   set ir_z1 my_size
@@ -85,7 +89,9 @@ end
 to place_in_flock
   layout-circle turtles 3
   ask turtles[
-    set heading random 360
+    set ycor (ycor - 50)
+    let head( random 30 - random 30)
+    ifelse head < 0 [set heading 360 - head][set heading head]
     ]
 end
 
@@ -97,6 +103,8 @@ end
 
 to Toggle_Flock_Dist_Capture
   ifelse capFlockDist? = true[set capFlockDist? false][set capFlockDist? true]
+  compute_center_of_Mass
+  set Flock_Dist 0
 end
 
 to Reset_Flock_Dist
@@ -104,6 +112,7 @@ to Reset_Flock_Dist
 end
 
  to compute_Center_of_Mass
+  ;;show"in com"
   let x 0 let y 0 let num count turtles
   ask turtles[
     set x (x + xcor)
@@ -111,18 +120,17 @@ end
     ]
   set x (x / num)
   set y (y / num)
-  create-turtles 1[set xcor x set ycor y set color red set label "com"]
-  create-turtles 1[set xcor flock_x_pos set ycor flock_y_pos set color green set label "com"]
-  ask one-of turtles with[label = "com"] [set Flock_Dist (Flock_Dist + (distance one-of other turtles with [label = "com"])) ]
+  create-turtles 1[set xcor x set ycor y set color red set label "com*"]
+  ask turtles with[label = "com*"] [set Flock_Dist (Flock_Dist + (distancexy flock_x_pos flock_y_pos)) ]
   set flock_x_pos x
   set flock_y_pos y
-  ask turtles with [label = "com"][die]
+  ask turtles with [label = "com*"][die]
 
 end
 
 
 to go ;;all turtles move one step...tick clock
-  if ticks = 10800 [compute_avg_bot_dist show "avg bot:" show average_bot_dist show "com" show Flock_Dist stop]
+  if ticks = 10800 [compute_avg_bot_dist show "avg bot:" show average_bot_dist show "com" show Flock_Dist wait 2 stop-inspecting turtle 1 stop]
   ask turtles [computeNewHeading set flockmates no-turtles]
   ask turtles [set heading heading + newHeading set newHeading 0]
   ask turtles [ifelse wait? = false[ let temp bot_speed / 60 + random-float (0.05 * (bot_speed / 60))  fd temp set totalDist (totalDist + temp)] [set wait? false]] ;;just move forward...no reaction event
@@ -278,10 +286,10 @@ end
 GRAPHICS-WINDOW
 266
 33
-1299
-512
-44
-19
+7187
+6975
+300
+300
 11.5
 1
 10
@@ -292,10 +300,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--44
-44
--19
-19
+-300
+300
+-300
+300
 0
 0
 1
@@ -345,7 +353,7 @@ numbots
 numbots
 1
 100
-1
+25
 1
 1
 NIL
@@ -409,6 +417,23 @@ BUTTON
 443
 NIL
 Reset_Flock_Dist
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+74
+492
+182
+525
+NIL
+toggleInspect
 NIL
 1
 T
